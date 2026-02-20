@@ -40,99 +40,134 @@ export function OPTIONS(request) {
 }
 
 export async function GET(request) {
-  const url = new URL(request.url);
-  const slug = url.searchParams.get("slug");
-  if (!slug) {
-    return NextResponse.json(
-      { error: "Missing slug." },
-      { status: 400, headers: corsHeaders(request) },
-    );
-  }
-
-  const collection = await getCollection();
-  const doc = await collection.findOne(
-    { slug },
-    { projection: { _id: 0, slug: 1, destination: 1, clicks: 1, createdAt: 1, expiresAt: 1 } },
-  );
-
-  if (!doc) {
-    return NextResponse.json(
-      { error: "Not found." },
-      { status: 404, headers: corsHeaders(request) },
-    );
-  }
-
-  return NextResponse.json(doc, { headers: corsHeaders(request) });
-}
-
-export async function POST(request) {
-  let body;
   try {
-    body = await request.json();
-  } catch {
-    return NextResponse.json(
-      { error: "Invalid JSON." },
-      { status: 400, headers: corsHeaders(request) },
-    );
-  }
-
-  const destination = normalizeUrl(body?.url);
-  const expiresAtRaw = body?.expiresAt;
-
-  if (!destination) {
-    return NextResponse.json(
-      { error: "Please enter a valid http(s) URL." },
-      { status: 400, headers: corsHeaders(request) },
-    );
-  }
-
-  let expiresAt = null;
-  if (expiresAtRaw) {
-    const d = new Date(expiresAtRaw);
-    if (Number.isNaN(d.getTime())) {
+    const url = new URL(request.url);
+    const slug = url.searchParams.get("slug");
+    if (!slug) {
       return NextResponse.json(
-        { error: "Expiry must be a valid date/time." },
+        { error: "Missing slug." },
         { status: 400, headers: corsHeaders(request) },
       );
     }
-    if (d.getTime() <= Date.now()) {
+
+    const collection = await getCollection();
+    const doc = await collection.findOne(
+      { slug },
+      {
+        projection: {
+          _id: 0,
+          slug: 1,
+          destination: 1,
+          clicks: 1,
+          createdAt: 1,
+          expiresAt: 1,
+        },
+      },
+    );
+
+    if (!doc) {
       return NextResponse.json(
-        { error: "Expiry must be in the future." },
-        { status: 400, headers: corsHeaders(request) },
+        { error: "Not found." },
+        { status: 404, headers: corsHeaders(request) },
       );
     }
-    expiresAt = d.toISOString();
-  }
 
-  const collection = await getCollection();
-
-  let slug = null;
-  for (let i = 0; i < 5; i++) {
-    const candidate = randomSlug(7);
-    try {
-      await collection.insertOne({
-        slug: candidate,
-        destination,
-        createdAt: new Date().toISOString(),
-        expiresAt,
-        clicks: 0,
-      });
-      slug = candidate;
-      break;
-    } catch {
-      // duplicate slug -> retry
-    }
-  }
-
-  if (!slug) {
+    return NextResponse.json(doc, { headers: corsHeaders(request) });
+  } catch (err) {
+    const message = err?.message || "Backend error";
+    const isConfig = message.includes("MONGODB_URI");
     return NextResponse.json(
-      { error: "Could not generate a unique short link. Try again." },
+      {
+        error: isConfig
+          ? "Backend is missing MongoDB config (MONGODB_URI). Add it in Vercel env vars and redeploy."
+          : "Backend error. Check Vercel logs.",
+      },
       { status: 500, headers: corsHeaders(request) },
     );
   }
+}
 
-  return NextResponse.json(
-    { slug, shortPath: `/r/${slug}`, destination, expiresAt },
-    { headers: corsHeaders(request) },
-  );
+export async function POST(request) {
+  try {
+    let body;
+    try {
+      body = await request.json();
+    } catch {
+      return NextResponse.json(
+        { error: "Invalid JSON." },
+        { status: 400, headers: corsHeaders(request) },
+      );
+    }
+
+    const destination = normalizeUrl(body?.url);
+    const expiresAtRaw = body?.expiresAt;
+
+    if (!destination) {
+      return NextResponse.json(
+        { error: "Please enter a valid http(s) URL." },
+        { status: 400, headers: corsHeaders(request) },
+      );
+    }
+
+    let expiresAt = null;
+    if (expiresAtRaw) {
+      const d = new Date(expiresAtRaw);
+      if (Number.isNaN(d.getTime())) {
+        return NextResponse.json(
+          { error: "Expiry must be a valid date/time." },
+          { status: 400, headers: corsHeaders(request) },
+        );
+      }
+      if (d.getTime() <= Date.now()) {
+        return NextResponse.json(
+          { error: "Expiry must be in the future." },
+          { status: 400, headers: corsHeaders(request) },
+        );
+      }
+      expiresAt = d.toISOString();
+    }
+
+    const collection = await getCollection();
+
+    let slug = null;
+    for (let i = 0; i < 5; i++) {
+      const candidate = randomSlug(7);
+      try {
+        await collection.insertOne({
+          slug: candidate,
+          destination,
+          createdAt: new Date().toISOString(),
+          expiresAt,
+          clicks: 0,
+        });
+        slug = candidate;
+        break;
+      } catch {
+        // duplicate slug -> retry
+      }
+    }
+
+    if (!slug) {
+      return NextResponse.json(
+        { error: "Could not generate a unique short link. Try again." },
+        { status: 500, headers: corsHeaders(request) },
+      );
+    }
+
+    return NextResponse.json(
+      { slug, shortPath: `/r/${slug}`, destination, expiresAt },
+      { headers: corsHeaders(request) },
+    );
+  } catch (err) {
+    const message = err?.message || "Backend error";
+    const isConfig = message.includes("MONGODB_URI");
+    return NextResponse.json(
+      {
+        error: isConfig
+          ? "Backend is missing MongoDB config (MONGODB_URI). Add it in Vercel env vars and redeploy."
+          : "Backend error. Check Vercel logs.",
+      },
+      { status: 500, headers: corsHeaders(request) },
+    );
+  }
 }
