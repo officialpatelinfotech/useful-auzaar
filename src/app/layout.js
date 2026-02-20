@@ -1,6 +1,7 @@
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import Link from "next/link";
+import Image from "next/image";
 import { getSiteUrl } from "@/lib/siteUrl";
 
 const geistSans = Geist({
@@ -21,14 +22,38 @@ export const metadata = {
   },
   description:
     "UsefulAuzaar is a collection of fast, free, useful online tools like a URL shortener, QR code generator, and password generator.",
+  manifest: "/site.webmanifest",
+  icons: {
+    icon: [
+      { url: "/favicon.ico" },
+      { url: "/favicon-16x16.png", sizes: "16x16", type: "image/png" },
+      { url: "/favicon-32x32.png", sizes: "32x32", type: "image/png" },
+      { url: "/android-chrome-192x192.png", sizes: "192x192", type: "image/png" },
+      { url: "/android-chrome-512x512.png", sizes: "512x512", type: "image/png" },
+    ],
+    apple: [
+      {
+        url: "/apple-touch-icon.png",
+        sizes: "180x180",
+        type: "image/png",
+      },
+    ],
+  },
 };
 
 function SiteHeader() {
   return (
     <header className="border-b border-black/[.08] dark:border-white/[.145]">
       <div className="mx-auto flex w-full max-w-5xl items-center justify-between px-6 py-4">
-        <Link href="/" className="font-semibold tracking-tight">
-          UsefulAuzaar
+        <Link href="/" className="flex items-center gap-2 font-semibold tracking-tight">
+          <Image
+            src="/logo.png"
+            alt="UsefulAuzaar"
+            width={28}
+            height={28}
+            priority
+          />
+          <span>UsefulAuzaar</span>
         </Link>
         <nav className="flex items-center gap-4 text-sm">
           <Link href="/url-shortener" className="hover:underline">
