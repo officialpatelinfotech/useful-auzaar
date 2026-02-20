@@ -1,0 +1,8 @@
+# Local dev vars for MongoDB Atlas Data API
+# Copy to `.dev.vars` and fill values.
+
+MONGO_DATA_API_BASE=
+MONGO_DATA_API_KEY=
+MONGO_DATA_SOURCE=Cluster0
+MONGO_DB=usefulauzaar
+MONGO_COLLECTION=short_links
