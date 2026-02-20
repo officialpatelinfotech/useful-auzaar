@@ -35,6 +35,31 @@ async function getCollection() {
   return collection;
 }
 
+function classifyBackendError(err) {
+  const name = String(err?.name || "");
+  const message = String(err?.message || "");
+
+  if (message.includes("MONGODB_URI")) {
+    return "Backend is missing MongoDB config (MONGODB_URI). Add it in Vercel env vars and redeploy.";
+  }
+
+  // Common MongoDB driver failures (keep messages actionable but non-sensitive)
+  const combined = `${name} ${message}`;
+  if (/authentication failed|bad auth|auth failed/i.test(combined)) {
+    return "MongoDB authentication failed. Double-check username/password in MONGODB_URI (URL-encode special characters in the password).";
+  }
+  if (/ip.*not authorized|not authorized|ECONNREFUSED|ETIMEDOUT|server selection|MongoServerSelectionError/i.test(
+    combined,
+  )) {
+    return "MongoDB connection failed. In MongoDB Atlas, add Network Access allowlist 0.0.0.0/0 (or allow Vercel egress IPs) and ensure the cluster is running.";
+  }
+  if (/ENOTFOUND|EAI_AGAIN|querySrv/i.test(combined)) {
+    return "MongoDB DNS lookup failed. Verify the cluster hostname in MONGODB_URI (mongodb+srv URL) and that the cluster exists.";
+  }
+
+  return "Backend error. Check Vercel logs.";
+}
+
 export function OPTIONS(request) {
   return new NextResponse(null, { status: 204, headers: corsHeaders(request) });
 }
@@ -74,13 +99,9 @@ export async function GET(request) {
 
     return NextResponse.json(doc, { headers: corsHeaders(request) });
   } catch (err) {
-    const message = err?.message || "Backend error";
-    const isConfig = message.includes("MONGODB_URI");
     return NextResponse.json(
       {
-        error: isConfig
-          ? "Backend is missing MongoDB config (MONGODB_URI). Add it in Vercel env vars and redeploy."
-          : "Backend error. Check Vercel logs.",
+        error: classifyBackendError(err),
       },
       { status: 500, headers: corsHeaders(request) },
     );
@@ -159,13 +180,9 @@ export async function POST(request) {
       { headers: corsHeaders(request) },
     );
   } catch (err) {
-    const message = err?.message || "Backend error";
-    const isConfig = message.includes("MONGODB_URI");
     return NextResponse.json(
       {
-        error: isConfig
-          ? "Backend is missing MongoDB config (MONGODB_URI). Add it in Vercel env vars and redeploy."
-          : "Backend error. Check Vercel logs.",
+        error: classifyBackendError(err),
       },
       { status: 500, headers: corsHeaders(request) },
     );
