@@ -72,6 +72,7 @@ function SiteHeader() {
 }
 
 function SiteFooter() {
+  const year = new Date().getFullYear();
   return (
     <footer className="border-t border-black/[.08] dark:border-white/[.145]">
       <div className="mx-auto w-full max-w-5xl px-6 py-8 text-sm text-zinc-600 dark:text-zinc-400">
@@ -79,6 +80,18 @@ function SiteFooter() {
         <p className="mt-2">
           Built for speed and simplicity. No ads (for now).
         </p>
+
+        <div className="mt-4 flex flex-wrap items-center gap-x-4 gap-y-2">
+          <Link href="/privacy" className="hover:underline">
+            Privacy Policy
+          </Link>
+          <Link href="/terms" className="hover:underline">
+            Terms & Conditions
+          </Link>
+          <span className="text-zinc-500 dark:text-zinc-500">
+            © {year} UsefulAuzaar. All rights reserved.
+          </span>
+        </div>
       </div>
     </footer>
   );

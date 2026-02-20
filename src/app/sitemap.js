@@ -16,6 +16,8 @@ export default function sitemap() {
     "/whatsapp-qr-code",
     "/password-generator",
     "/strong-password-generator",
+    "/privacy",
+    "/terms",
   ];
 
   return paths.map((path) => ({
