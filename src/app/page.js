@@ -15,7 +15,7 @@ export default function Home() {
 
       <section className="space-y-4">
         <h2 className="text-2xl font-semibold tracking-tight">Popular tools</h2>
-        <div className="grid gap-4 sm:grid-cols-3">
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           <Link
             href="/url-shortener"
             className="rounded-2xl border border-black/[.08] bg-white p-5 hover:bg-black/[.04] dark:border-white/[.145] dark:bg-black dark:hover:bg-white/[.06]"
